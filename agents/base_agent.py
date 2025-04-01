@@ -26,7 +26,7 @@ class BaseAgent(ABC):
         """
         pass
 
-    def call_gpt(self, prompt, system_message=None, model="gpt-3.5-turbo"):
+    def call_gpt(self, prompt, system_message=None, model="gpt-4o-mini"):
         """Call OpenAI GPT API with prompt
         
         Args:
