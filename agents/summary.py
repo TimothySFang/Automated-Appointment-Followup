@@ -1,31 +1,33 @@
 from .base_agent import BaseAgent
+from config import DENTAL_PROFESSIONAL
 
 class SummaryAgent(BaseAgent):
-    """Agent responsible for generating a clinic-facing summary of the patient interaction."""
+    """Agent responsible for generating a clinical summary of the patient interaction."""
     
     def __init__(self, name="Summary Agent", api_key=None):
         super().__init__(name, api_key)
     
     def process(self, patient, extracted_symptoms, risk_assessment, care_instructions):
-        """Generate a clinic-facing summary of the patient interaction.
+        """Generate a clinical summary of the patient interaction.
         
         Args:
             patient: The Patient object.
-            extracted_symptoms: Dictionary of extracted symptoms from the ResponseAnalyzerAgent.
+            extracted_symptoms: Dictionary of extracted symptoms.
             risk_assessment: Dictionary containing risk level and justification.
-            care_instructions: String containing the care instructions provided to the patient.
+            care_instructions: The care instructions provided to the patient.
             
         Returns:
-            str: A clinic-facing summary of the interaction.
+            str: Clinical summary.
         """
         # Create a system message that guides the AI's behavior
         system_message = (
-            "You are a dental professional summarizing patient follow-up interactions for clinic staff. "
-            "Your summary should be concise, professional, and highlight key clinical information. "
-            "Focus on symptoms, risk assessment, and any actions that may be needed from the clinic."
+            f"You are {DENTAL_PROFESSIONAL['name']}, {DENTAL_PROFESSIONAL['title']} at {DENTAL_PROFESSIONAL['clinic_name']}, "
+            "creating a clinical summary for a patient's dental follow-up. "
+            "Your summary should be professional, concise, and include all relevant clinical information. "
+            "Format the summary with clear sections for symptoms, assessment, care provided, and follow-up recommendations."
         )
         
-        # Create a prompt with all the interaction details
+        # Create a prompt with all the context
         prompt = f"""
         Patient: {patient.name}
         Procedure: {patient.procedure}
@@ -39,8 +41,6 @@ class SummaryAgent(BaseAgent):
         - Fever: {extracted_symptoms.get('fever', False)}
         - Medication Taken: {extracted_symptoms.get('medication_taken', 'None')}
         - Other Symptoms: {', '.join(extracted_symptoms.get('other_symptoms', [])) or 'None'}
-        - Patient Concerns: {extracted_symptoms.get('patient_concerns', 'None')}
-        - Overall Sentiment: {extracted_symptoms.get('overall_sentiment', 'Not analyzed')}
         
         Risk Assessment:
         - Risk Level: {risk_assessment.get('risk_level', 'Unknown')}
@@ -49,9 +49,9 @@ class SummaryAgent(BaseAgent):
         Care Instructions Provided:
         {care_instructions}
         
-        Generate a concise, clinic-facing summary of this patient interaction.
-        Highlight any concerning symptoms, the risk level, and whether any follow-up from the clinic is recommended.
-        The summary should be professional and focused on clinical relevance.
+        Generate a comprehensive clinical summary of this follow-up interaction.
+        Include relevant symptoms, your assessment, care instructions provided, and any recommended follow-up.
+        This summary will be added to the patient's medical record.
         """
         
         # Call the GPT API to generate the summary

@@ -23,7 +23,18 @@ class Patient:
     procedure_date: datetime
     contact_info: str
     medical_history: str = ""
+    phone_number: str = None
     interactions: List[PatientInteraction] = field(default_factory=list)
+    
+    def __init__(self, id, name, procedure, procedure_date, contact_info, medical_history, phone_number=None):
+        self.id = id
+        self.name = name
+        self.procedure = procedure
+        self.procedure_date = procedure_date
+        self.contact_info = contact_info
+        self.medical_history = medical_history
+        self.phone_number = phone_number
+        self.interactions = []
     
     def add_interaction(self) -> PatientInteraction:
         """Add a new interaction for this patient."""

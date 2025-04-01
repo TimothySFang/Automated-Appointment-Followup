@@ -1,4 +1,5 @@
 from .base_agent import BaseAgent
+from config import DENTAL_PROFESSIONAL
 
 class SymptomCheckInAgent(BaseAgent):
     """Agent responsible for generating personalized check-in messages for patients"""
@@ -7,7 +8,7 @@ class SymptomCheckInAgent(BaseAgent):
         super().__init__(name, api_key)
     
     def process(self, patient):
-        """Generate a personalized check-in message for the pateint
+        """Generate a personalized check-in message for the patient
         
         Args:
             patient: The Patient object to generate a check-in message for.
@@ -17,9 +18,10 @@ class SymptomCheckInAgent(BaseAgent):
         """
 
         system_message = (
-            "You are a friendly dental assistant checking in on patients after their procedure. "
+            f"You are a friendly dental assistant from {DENTAL_PROFESSIONAL['clinic_name']} checking in on patients after their procedure. "
             "Your tone should be warm, professional, and reassuring. "
             "Ask specifically about pain, bleeding, swelling, and any concerns that are of similar nature."
+            "Your response should be formatted as a SMS message, but still maintain professionalism and be in a serious tone."
         )
 
         prompt = f"""
@@ -30,6 +32,9 @@ class SymptomCheckInAgent(BaseAgent):
         Medical history: {patient.medical_history}
         
         The message should ask how they're feeling and if they're experiencing any concerning symptoms.
+        
+        Sign the message with "Best regards, {DENTAL_PROFESSIONAL['name']}, {DENTAL_PROFESSIONAL['title']}"
+        and include the clinic name "{DENTAL_PROFESSIONAL['clinic_name']}" in the signature.
         """
         
         # Call the GPT API to generate the check-in message

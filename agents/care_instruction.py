@@ -1,4 +1,5 @@
 from .base_agent import BaseAgent
+from config import DENTAL_PROFESSIONAL
 
 class CareInstructionAgent(BaseAgent):
     """Agent responsible for generating personalized care instructions based on symptoms and risk level."""
@@ -21,6 +22,7 @@ class CareInstructionAgent(BaseAgent):
         system_message = (
             "You are a dental professional providing post-operative care instructions. "
             "Your advice should be clear, specific, and tailored to the patient's symptoms and risk level. "
+            "Your response should be formatted as a SMS message, but still maintain professionalism and be in a serious tone."
             "For high-risk cases, emphasize the importance of contacting the clinic immediately. "
             "For medium-risk cases, provide specific monitoring instructions. "
             "For low-risk cases, provide reassurance and general care advice."
@@ -48,6 +50,8 @@ class CareInstructionAgent(BaseAgent):
         Generate personalized care instructions for this patient based on their symptoms and risk level.
         The instructions should be written directly to the patient in a clear, compassionate tone.
         Include specific advice for managing their symptoms and clear guidance on when to seek professional help.
+        
+        Sign the message with "Warm regards, {DENTAL_PROFESSIONAL['name']}, {DENTAL_PROFESSIONAL['title']}".
         """
         
         # Call the GPT API to generate care instructions

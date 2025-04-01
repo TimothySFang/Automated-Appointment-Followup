@@ -69,6 +69,7 @@ with st.sidebar:
             value="No significant medical history. No known allergies."
         )
         contact_info = st.text_input("Contact Info", value="john.doe@example.com")
+        phone_number = st.text_input("Phone Number (with country code)", value="+1")
         
         submit_button = st.form_submit_button("Create/Update Patient")
         
@@ -80,38 +81,56 @@ with st.sidebar:
                 procedure=procedure,
                 procedure_date=datetime.combine(procedure_date, datetime.min.time()),
                 contact_info=contact_info,
-                medical_history=medical_history
+                medical_history=medical_history,
+                phone_number=phone_number
             )
+            
+            # Add a new interaction
             st.session_state.patient.add_interaction()
-            st.session_state.current_step = 1
+            
+            # Reset the workflow
             st.session_state.check_in_message = None
             st.session_state.patient_response = ""
             st.session_state.extracted_symptoms = None
             st.session_state.risk_assessment = None
             st.session_state.care_instructions = None
             st.session_state.summary = None
+            st.session_state.current_step = 1
+            
             st.success("Patient created successfully!")
+
+    st.markdown("---")
+    if st.button("Reset Analysis"):
+        # Reset all analysis-related session state variables
+        st.session_state.patient_response = ""
+        st.session_state.extracted_symptoms = None
+        st.session_state.risk_assessment = None
+        st.session_state.care_instructions = None
+        st.session_state.summary = None
+        st.session_state.current_step = 1
+        st.rerun()
 
 # Main content area
 if not st.session_state.patient:
     st.info("Please create a patient using the form in the sidebar.")
 else:
     # Create tabs for each step in the workflow
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tabs = st.tabs([
         "1. Check-In Message", 
         "2. Symptom Analysis", 
         "3. Risk Assessment",
         "4. Care Instructions",
-        "5. Clinic Summary"
+        "5. Clinic Summary",
+        "6. Patient Responses"
     ])
     
     # Tab 1: Check-In Message
-    with tab1:
+    with tabs[0]:
         st.header("Step 1: Generate Check-In Message")
         
         if st.button("Generate Check-In Message", key="gen_checkin"):
             with st.spinner("Generating check-in message..."):
-                # Create the agent with the API key from session state
+                # Create the agent with the API key
                 symptom_checkin_agent = SymptomCheckInAgent(api_key=api_key)
                 
                 # Generate the check-in message
@@ -121,39 +140,100 @@ else:
         if st.session_state.check_in_message:
             st.subheader("Check-In Message:")
             st.info(st.session_state.check_in_message)
+            
+            # Add SMS sending functionality
+            if st.session_state.patient and st.session_state.patient.phone_number:
+                if st.button("Send SMS to Patient", key="send_sms"):
+                    try:
+                        from services.sms_service import SMSService
+                        sms_service = SMSService()
+                        
+                        if sms_service.validate_phone_number(st.session_state.patient.phone_number):
+                            with st.spinner("Sending SMS..."):
+                                message_sids = sms_service.send_message(
+                                    st.session_state.patient.phone_number,
+                                    st.session_state.check_in_message
+                                )
+                                
+                                if message_sids:
+                                    st.success(f"SMS sent successfully! {len(message_sids)} message(s) sent.")
+                                else:
+                                    st.error("Failed to send SMS. Check logs for details.")
+                        else:
+                            st.error("Invalid phone number format. Please use format +1234567890")
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+            else:
+                st.warning("No phone number provided for this patient. Cannot send SMS.")
     
     # Tab 2: Symptom Analysis
-    with tab2:
+    with tabs[1]:
         st.header("Step 2: Analyze Patient Response")
+        
+        # Add a debug section
+        with st.expander("Debug Info"):
+            st.write(f"Current step: {st.session_state.current_step}")
+            st.write(f"Has patient response: {'Yes' if st.session_state.patient_response else 'No'}")
+            st.write(f"Has extracted symptoms: {'Yes' if st.session_state.extracted_symptoms else 'No'}")
         
         if not st.session_state.check_in_message:
             st.warning("Please generate a check-in message first.")
         else:
             st.subheader("Patient Response:")
+            
+            # Display the current patient phone number if available
+            if "current_patient_phone" in st.session_state:
+                st.info(f"Analyzing response from: {st.session_state.current_patient_phone}")
+            
             patient_response = st.text_area(
-                "Enter the patient's response:",
+                "Enter or edit the patient's response:",
                 value=st.session_state.patient_response,
                 height=150
             )
             
-            if st.button("Analyze Response", key="analyze_response"):
-                if not patient_response:
-                    st.error("Please enter a patient response.")
-                else:
-                    with st.spinner("Analyzing patient response..."):
-                        # Update the session state
-                        st.session_state.patient_response = patient_response
-                        
-                        # Create the agent with the API key from session state
-                        response_analyzer_agent = ResponseAnalyzerAgent(api_key=api_key)
-                        
-                        # Analyze the response
-                        st.session_state.extracted_symptoms = response_analyzer_agent.process(
-                            st.session_state.patient, 
-                            st.session_state.patient_response
-                        )
-                        st.session_state.current_step = 3
+            # Only show the analyze button if the response hasn't been analyzed yet
+            if not st.session_state.extracted_symptoms:
+                if st.button("Analyze Response", key="analyze_response"):
+                    if not patient_response:
+                        st.error("Please enter a patient response.")
+                    else:
+                        with st.spinner("Analyzing patient response..."):
+                            # Update the session state
+                            st.session_state.patient_response = patient_response
+                            
+                            # Create the agent with the API key from session state
+                            response_analyzer_agent = ResponseAnalyzerAgent(api_key=api_key)
+                            
+                            # Analyze the response
+                            st.session_state.extracted_symptoms = response_analyzer_agent.process(
+                                st.session_state.patient, 
+                                st.session_state.patient_response
+                            )
+                            st.session_state.current_step = 3
+                            
+                            # Force a rerun to update the UI
+                            st.rerun()
+            else:
+                # If the response has been edited, show a button to re-analyze
+                if patient_response != st.session_state.patient_response:
+                    if st.button("Re-analyze Response", key="reanalyze_response"):
+                        with st.spinner("Re-analyzing patient response..."):
+                            # Update the session state
+                            st.session_state.patient_response = patient_response
+                            
+                            # Create the agent with the API key from session state
+                            response_analyzer_agent = ResponseAnalyzerAgent(api_key=api_key)
+                            
+                            # Analyze the response
+                            st.session_state.extracted_symptoms = response_analyzer_agent.process(
+                                st.session_state.patient, 
+                                st.session_state.patient_response
+                            )
+                            
+                            # Force a rerun to update the UI
+                            st.rerun()
             
+            # Always display extracted symptoms if they exist
             if st.session_state.extracted_symptoms:
                 st.subheader("Extracted Symptoms:")
                 
@@ -184,7 +264,7 @@ else:
                     st.write(st.session_state.extracted_symptoms.get("patient_concerns", "None"))
     
     # Tab 3: Risk Assessment
-    with tab3:
+    with tabs[2]:
         st.header("Step 3: Risk Assessment")
         
         if not st.session_state.extracted_symptoms:
@@ -220,56 +300,251 @@ else:
                 st.write(st.session_state.risk_assessment.get("justification", "No justification provided."))
     
     # Tab 4: Care Instructions
-    with tab4:
+    with tabs[3]:
         st.header("Step 4: Care Instructions")
         
         if not st.session_state.risk_assessment:
             st.warning("Please complete the risk assessment first.")
         else:
-            if st.button("Generate Care Instructions", key="gen_care"):
-                with st.spinner("Generating care instructions..."):
-                    # Create the agent with the API key from session state
-                    care_instruction_agent = CareInstructionAgent(api_key=api_key)
-                    
-                    # Generate care instructions
-                    st.session_state.care_instructions = care_instruction_agent.process(
-                        st.session_state.patient,
-                        st.session_state.extracted_symptoms,
-                        st.session_state.risk_assessment
-                    )
-                    st.session_state.current_step = 5
+            # Only show the generate button if care instructions haven't been generated yet
+            if not st.session_state.care_instructions:
+                if st.button("Generate Care Instructions", key="gen_care"):
+                    with st.spinner("Generating care instructions..."):
+                        # Create the agent with the API key from session state
+                        care_instruction_agent = CareInstructionAgent(api_key=api_key)
+                        
+                        # Generate care instructions
+                        st.session_state.care_instructions = care_instruction_agent.process(
+                            st.session_state.patient,
+                            st.session_state.extracted_symptoms,
+                            st.session_state.risk_assessment
+                        )
+                        st.session_state.current_step = 5
             
             if st.session_state.care_instructions:
                 st.subheader("Care Instructions:")
-                st.write(st.session_state.care_instructions)
+                
+                # Make the care instructions editable
+                care_instructions = st.text_area(
+                    "Edit care instructions before sending:",
+                    value=st.session_state.care_instructions,
+                    height=300
+                )
+                
+                # If the care instructions have been edited, show a button to update them
+                if care_instructions != st.session_state.care_instructions:
+                    if st.button("Update Care Instructions"):
+                        st.session_state.care_instructions = care_instructions
+                        st.success("Care instructions updated!")
+                
+                # Add a button to send the care instructions to the patient
+                if "current_patient_phone" in st.session_state:
+                    if st.button("Send Care Instructions to Patient", key="send_care"):
+                        try:
+                            from services.sms_service import SMSService
+                            sms_service = SMSService()
+                            
+                            if sms_service.validate_phone_number(st.session_state.current_patient_phone):
+                                with st.spinner("Sending care instructions..."):
+                                    message_sids = sms_service.send_message(
+                                        st.session_state.current_patient_phone,
+                                        st.session_state.care_instructions
+                                    )
+                                    
+                                    if message_sids:
+                                        st.success(f"Care instructions sent successfully! {len(message_sids)} message(s) sent.")
+                                        
+                                        # Automatically generate clinic summary if not already done
+                                        if not st.session_state.summary:
+                                            with st.spinner("Automatically generating clinic summary..."):
+                                                # Create the agent with the API key from session state
+                                                summary_agent = SummaryAgent(api_key=api_key)
+                                                
+                                                # Generate summary
+                                                st.session_state.summary = summary_agent.process(
+                                                    st.session_state.patient,
+                                                    st.session_state.extracted_symptoms,
+                                                    st.session_state.risk_assessment,
+                                                    st.session_state.care_instructions
+                                                )
+                                            
+                                            st.info("Clinic summary generated automatically. Please proceed to the Clinic Summary tab.")
+                                    else:
+                                        st.error("Failed to send care instructions. Check logs for details.")
+                            else:
+                                st.error(f"Invalid phone number format: {st.session_state.current_patient_phone}")
+                        except Exception as e:
+                            st.error(f"Error: {str(e)}")
+                else:
+                    st.warning("No patient phone number available. Cannot send care instructions.")
     
     # Tab 5: Clinic Summary
-    with tab5:
+    with tabs[4]:
         st.header("Step 5: Clinic Summary")
         
         if not st.session_state.care_instructions:
             st.warning("Please generate care instructions first.")
         else:
-            if st.button("Generate Clinic Summary", key="gen_summary"):
-                with st.spinner("Generating clinic summary..."):
-                    # Create the agent with the API key from session state
-                    summary_agent = SummaryAgent(api_key=api_key)
-                    
-                    # Generate summary
-                    st.session_state.summary = summary_agent.process(
-                        st.session_state.patient,
-                        st.session_state.extracted_symptoms,
-                        st.session_state.risk_assessment,
-                        st.session_state.care_instructions
-                    )
+            # Only show the generate button if summary hasn't been generated yet
+            if not st.session_state.summary:
+                if st.button("Generate Clinic Summary", key="gen_summary"):
+                    with st.spinner("Generating clinic summary..."):
+                        # Create the agent with the API key from session state
+                        summary_agent = SummaryAgent(api_key=api_key)
+                        
+                        # Generate summary
+                        st.session_state.summary = summary_agent.process(
+                            st.session_state.patient,
+                            st.session_state.extracted_symptoms,
+                            st.session_state.risk_assessment,
+                            st.session_state.care_instructions
+                        )
             
             if st.session_state.summary:
                 st.subheader("Clinic Summary:")
-                st.write(st.session_state.summary)
                 
-                # Display a success message when the workflow is complete
-                st.success("Patient follow-up workflow completed successfully!")
+                # Make the summary editable
+                summary = st.text_area(
+                    "Edit clinic summary:",
+                    value=st.session_state.summary,
+                    height=300
+                )
+                
+                # If the summary has been edited, show a button to update it
+                if summary != st.session_state.summary:
+                    if st.button("Update Clinic Summary"):
+                        st.session_state.summary = summary
+                        st.success("Clinic summary updated!")
+                
+                # Add a button to save the summary to the patient record
+                if st.button("Save Summary to Patient Record"):
+                    # Here you would add code to save the summary to your database
+                    st.success("Summary saved to patient record!")
+                    
+                    # Display a success message when the workflow is complete
+                    st.success("Patient follow-up workflow completed successfully!")
+
+    # Tab 6: Patient Responses
+    with tabs[5]:
+        st.header("Patient SMS Responses")
+        
+        # Add auto-refresh option
+        auto_refresh = st.checkbox("Auto-refresh (check every 30 seconds)", value=False)
+        auto_analyze = st.checkbox("Automatically analyze new responses", value=True)
+        
+        # Add a debug section to see what's in session state
+        with st.expander("Debug Session State"):
+            st.write("Current Session State Variables:")
+            for key, value in st.session_state.items():
+                if key not in ['patient']:  # Skip large objects
+                    st.write(f"**{key}**: {value}")
+        
+        if st.button("Check for New Responses") or auto_refresh:
+            try:
+                # Call your Flask API to get patient responses
+                import requests
+                
+                # Use the correct port
+                response = requests.get("http://127.0.0.1:5000/responses", timeout=5)
+                
+                if response.status_code == 200:
+                    patient_responses = response.json()
+                    
+                    if not patient_responses:
+                        st.info("No patient responses found.")
+                    else:
+                        # Display responses for each patient
+                        for phone_number, data in patient_responses.items():
+                            if not data["processed"]:
+                                st.subheader(f"Patient with phone number: {phone_number}")
+                                
+                                # Get the latest response
+                                latest_response = data["responses"][-1]["message"]
+                                
+                                for idx, resp in enumerate(data["responses"]):
+                                    st.text(f"Time: {resp['timestamp']}")
+                                    st.text_area(f"Response {idx+1}", resp["message"], height=100)
+                                
+                                # If auto-analyze is enabled, automatically process the response
+                                if auto_analyze:
+                                    with st.spinner(f"Automatically analyzing response from {phone_number}..."):
+                                        # Update the patient response in the session state
+                                        st.session_state.patient_response = latest_response
+                                        st.session_state.current_patient_phone = phone_number
+                                        
+                                        # Create the agent with the API key
+                                        response_analyzer_agent = ResponseAnalyzerAgent(api_key=api_key)
+                                        
+                                        # Analyze the response
+                                        st.session_state.extracted_symptoms = response_analyzer_agent.process(
+                                            st.session_state.patient, 
+                                            latest_response
+                                        )
+                                        
+                                        # Explicitly set current_step to 3 to indicate we've completed symptom analysis
+                                        st.session_state.current_step = 3
+                                        
+                                        # Automatically assess risk
+                                        risk_assessment_agent = RiskAssessmentAgent(api_key=api_key)
+                                        st.session_state.risk_assessment = risk_assessment_agent.process(
+                                            st.session_state.patient, 
+                                            st.session_state.extracted_symptoms
+                                        )
+                                        
+                                        # Update current_step to 4
+                                        st.session_state.current_step = 4
+                                        
+                                        # Generate draft care instructions
+                                        care_instruction_agent = CareInstructionAgent(api_key=api_key)
+                                        st.session_state.care_instructions = care_instruction_agent.process(
+                                            st.session_state.patient,
+                                            st.session_state.extracted_symptoms,
+                                            st.session_state.risk_assessment
+                                        )
+                                        
+                                        # Update current_step to 5
+                                        st.session_state.current_step = 5
+                                        
+                                        # Generate clinic summary
+                                        summary_agent = SummaryAgent(api_key=api_key)
+                                        st.session_state.summary = summary_agent.process(
+                                            st.session_state.patient,
+                                            st.session_state.extracted_symptoms,
+                                            st.session_state.risk_assessment,
+                                            st.session_state.care_instructions
+                                        )
+                                        
+                                        # Mark as processed in the database
+                                        requests.post(f"http://127.0.0.1:5000/responses/{phone_number}/mark-processed")
+                                    
+                                    st.success(f"Response from {phone_number} has been automatically analyzed!")
+                                    st.info("Analysis complete! You can now review the results in the respective tabs.")
+                                    
+                                    # Force a rerun to update all tabs
+                                    st.rerun()
+                else:
+                    st.error(f"Failed to fetch patient responses. Status code: {response.status_code}")
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+            
+            # If auto-refresh is enabled, schedule the next refresh
+            if auto_refresh:
+                import time
+                st.info("Auto-refresh is enabled. Checking again in 30 seconds...")
+                time_placeholder = st.empty()
+                for i in range(30, 0, -1):
+                    time_placeholder.text(f"Next refresh in {i} seconds...")
+                    time.sleep(1)
+                st.rerun()
+
+        # In the Server Configuration section of the Patient Responses tab
+        with st.expander("Server Configuration"):
+            webhook_host = st.text_input("Webhook Server Host", value="127.0.0.1")
+            webhook_port = st.text_input("Webhook Server Port", value="5000")  # Changed from 8080 to 5000
+            webhook_url = f"http://{webhook_host}:{webhook_port}"
+            st.info(f"Using webhook server at: {webhook_url}")
 
 # Footer
 st.markdown("---")
 st.markdown("Autonomous Dental Follow-Up & Risk Monitor - Prototype")
+
