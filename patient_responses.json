@@ -48,6 +48,18 @@
       {
         "timestamp": "2025-04-01T17:13:33.519843",
         "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
+      },
+      {
+        "timestamp": "2025-04-01T17:51:45.303851",
+        "message": "Hey yea I feel terrible. Lots of bleeding I dont know whats wrong\n"
+      },
+      {
+        "timestamp": "2025-04-02T11:06:29.135227",
+        "message": "I actually have been bleedign a lot im very concerned"
+      },
+      {
+        "timestamp": "2025-04-02T11:08:24.729957",
+        "message": "help im bleeding everywhere"
       }
     ],
     "processed": true
@@ -61,6 +73,15 @@
       {
         "timestamp": "2025-04-01T17:36:55.932745",
         "message": "I have a ton of pain "
+      }
+    ],
+    "processed": true
+  },
+  "+17789976697": {
+    "responses": [
+      {
+        "timestamp": "2025-04-01T21:32:37.880289",
+        "message": "EW! "
       }
     ],
     "processed": true

@@ -209,13 +209,6 @@ with right_sidebar_col:
 
 # Continue with the rest of your app in the main column
 with main_col:
-    # Title and description
-    st.title("Autonomous Dental Follow-Up & Risk Monitor")
-    st.markdown("""
-    This prototype demonstrates an AI-powered system for post-procedure follow-up in dental clinics.
-    The system uses a swarm of specialized AI agents to check in with patients, analyze their responses,
-    assess risk, and provide appropriate care instructions.
-    """)
     
     # Sidebar for patient information
     with st.sidebar:
@@ -292,11 +285,12 @@ with main_col:
         # Create tabs for each step in the workflow
         tabs = st.tabs([
             "1. Check-In Message", 
-            "2. Symptom Analysis", 
-            "3. Risk Assessment",
-            "4. Care Instructions",
-            "5. Clinic Summary",
-            "6. Patient Responses"
+            "2. Overview",
+            "3. Symptom Analysis", 
+            "4. Risk Assessment",
+            "5. Care Instructions",
+            "6. Clinic Summary",
+            "7. Patient Responses"
         ])
         
         # Tab 1: Check-In Message
@@ -341,8 +335,211 @@ with main_col:
                 else:
                     st.warning("No phone number provided for this patient. Cannot send SMS.")
         
-        # Tab 2: Symptom Analysis
+        # Tab 2: Overview
         with tabs[1]:
+            st.header("Workflow Overview")
+            
+            if not st.session_state.check_in_message:
+                st.warning("Please generate a check-in message first.")
+            else:
+                # Create columns for status indicators
+                status_col1, status_col2, status_col3, status_col4, status_col5 = st.columns(5)
+                
+                with status_col1:
+                    if st.session_state.check_in_message:
+                        st.success("✅ Check-In")
+                    else:
+                        st.error("❌ Check-In")
+                    
+                with status_col2:
+                    if st.session_state.extracted_symptoms:
+                        st.success("✅ Symptoms")
+                    else:
+                        st.error("❌ Symptoms")
+                    
+                with status_col3:
+                    if st.session_state.risk_assessment:
+                        st.success("✅ Risk")
+                    else:
+                        st.error("❌ Risk")
+                    
+                with status_col4:
+                    if st.session_state.care_instructions:
+                        st.success("✅ Care")
+                    else:
+                        st.error("❌ Care")
+                    
+                with status_col5:
+                    if st.session_state.summary:
+                        st.success("✅ Summary")
+                    else:
+                        st.error("❌ Summary")
+                
+                st.markdown("---")
+                
+                # Display patient response if available
+                if st.session_state.patient_response:
+                    st.subheader("Patient Response")
+                    st.info(st.session_state.patient_response)
+                    st.markdown("---")
+                
+                # Create expandable sections for each component
+                with st.expander("Check-In Message", expanded=True):
+                    st.write(st.session_state.check_in_message)
+                
+                if st.session_state.extracted_symptoms:
+                    with st.expander("Symptom Analysis", expanded=True):
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.metric("Pain Level", st.session_state.extracted_symptoms.get("pain_level", "Not mentioned"))
+                            st.metric("Bleeding", st.session_state.extracted_symptoms.get("bleeding", "Not mentioned"))
+                            st.metric("Swelling", st.session_state.extracted_symptoms.get("swelling", "Not mentioned"))
+                            st.metric("Fever", "Yes" if st.session_state.extracted_symptoms.get("fever", False) else "No")
+                        
+                        with col2:
+                            st.metric("Medication Taken", st.session_state.extracted_symptoms.get("medication_taken", "None"))
+                            st.metric("Overall Sentiment", st.session_state.extracted_symptoms.get("overall_sentiment", "Not analyzed"))
+                            
+                            # Display other symptoms as a list
+                            other_symptoms = st.session_state.extracted_symptoms.get("other_symptoms", [])
+                            if other_symptoms:
+                                st.write("**Other Symptoms:**")
+                                for symptom in other_symptoms:
+                                    st.write(f"- {symptom}")
+                            else:
+                                st.write("**Other Symptoms:** None")
+                            
+                            # Display patient concerns
+                            st.write("**Patient Concerns:**")
+                            st.write(st.session_state.extracted_symptoms.get("patient_concerns", "None"))
+                
+                if st.session_state.risk_assessment:
+                    with st.expander("Risk Assessment", expanded=True):
+                        risk_level = st.session_state.risk_assessment.get("risk_level", "Unknown")
+                        
+                        # Display the risk level with appropriate color
+                        if risk_level.lower() == "low":
+                            st.success(f"Risk Level: {risk_level}")
+                        elif risk_level.lower() == "medium":
+                            st.warning(f"Risk Level: {risk_level}")
+                        elif risk_level.lower() == "high":
+                            st.error(f"Risk Level: {risk_level}")
+                        else:
+                            st.info(f"Risk Level: {risk_level}")
+                        
+                        # Display the justification
+                        st.subheader("Justification:")
+                        st.write(st.session_state.risk_assessment.get("justification", "No justification provided."))
+                
+                if st.session_state.care_instructions:
+                    with st.expander("Care Instructions", expanded=True):
+                        st.write(st.session_state.care_instructions)
+                
+                if st.session_state.summary:
+                    with st.expander("Clinic Summary", expanded=True):
+                        st.write(st.session_state.summary)
+                
+                # Add buttons for actions
+                st.markdown("---")
+                
+                # Only show the "Process All" button if some steps are missing
+                if (st.session_state.check_in_message and 
+                    (not st.session_state.extracted_symptoms or 
+                     not st.session_state.risk_assessment or 
+                     not st.session_state.care_instructions or 
+                     not st.session_state.summary)):
+                    
+                    if st.button("Process All Remaining Steps", key="process_all"):
+                        with st.spinner("Processing all remaining steps..."):
+                            # Step 2: Extract symptoms if needed
+                            if not st.session_state.extracted_symptoms and st.session_state.patient_response:
+                                response_analyzer = ResponseAnalyzerAgent(api_key=api_key)
+                                st.session_state.extracted_symptoms = response_analyzer.process(
+                                    st.session_state.patient, 
+                                    st.session_state.patient_response
+                                )
+                            
+                            # Step 3: Assess risk if needed
+                            if not st.session_state.risk_assessment and st.session_state.extracted_symptoms:
+                                risk_assessment_agent = RiskAssessmentAgent(api_key=api_key)
+                                st.session_state.risk_assessment = risk_assessment_agent.process(
+                                    st.session_state.patient, 
+                                    st.session_state.extracted_symptoms
+                                )
+                            
+                            # Step 4: Generate care instructions if needed
+                            if not st.session_state.care_instructions and st.session_state.risk_assessment:
+                                care_instruction_agent = CareInstructionAgent(api_key=api_key)
+                                st.session_state.care_instructions = care_instruction_agent.process(
+                                    st.session_state.patient,
+                                    st.session_state.extracted_symptoms,
+                                    st.session_state.risk_assessment
+                                )
+                            
+                            # Step 5: Generate clinic summary if needed
+                            if not st.session_state.summary and st.session_state.care_instructions:
+                                summary_agent = SummaryAgent(api_key=api_key)
+                                st.session_state.summary = summary_agent.process(
+                                    st.session_state.patient,
+                                    st.session_state.extracted_symptoms,
+                                    st.session_state.risk_assessment,
+                                    st.session_state.care_instructions
+                                )
+                        
+                        st.success("All steps completed successfully!")
+                        st.rerun()
+                
+                # Show approve and send button if all steps are complete
+                if (st.session_state.check_in_message and 
+                    st.session_state.extracted_symptoms and 
+                    st.session_state.risk_assessment and 
+                    st.session_state.care_instructions and 
+                    st.session_state.summary):
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button("Approve & Send Care Instructions", key="approve_send"):
+                            try:
+                                from services.sms_service import SMSService
+                                sms_service = SMSService()
+                                
+                                # Get the phone number to use
+                                phone_number = st.session_state.current_patient_phone if "current_patient_phone" in st.session_state else st.session_state.patient.phone_number
+                                
+                                if sms_service.validate_phone_number(phone_number):
+                                    with st.spinner("Sending care instructions..."):
+                                        message_sids = sms_service.send_message(
+                                            phone_number,
+                                            st.session_state.care_instructions
+                                        )
+                                        
+                                        if message_sids:
+                                            st.success(f"Care instructions sent successfully! {len(message_sids)} message(s) sent.")
+                                            
+                                            # Mark as processed in the database if it's a response
+                                            if "current_patient_phone" in st.session_state:
+                                                import requests
+                                                requests.post(f"http://127.0.0.1:5000/responses/{phone_number}/mark-processed")
+                                                st.success(f"Response from {phone_number} marked as processed.")
+                                        else:
+                                            st.error("Failed to send SMS. Check logs for details.")
+                                else:
+                                    st.error(f"Invalid phone number format: {phone_number}")
+                            except Exception as e:
+                                st.error(f"Error: {str(e)}")
+                    
+                    with col2:
+                        if st.button("Save to Patient Record", key="save_record"):
+                            # Here you would add code to save all the data to your database
+                            st.success("All information saved to patient record!")
+                            
+                            # Display a success message when the workflow is complete
+                            st.success("Patient follow-up workflow completed successfully!")
+        
+        # Tab 3: Symptom Analysis
+        with tabs[2]:
             st.header("Step 2: Analyze Patient Response")
             
             # Add a debug section
@@ -438,8 +635,8 @@ with main_col:
                         st.write("**Patient Concerns:**")
                         st.write(st.session_state.extracted_symptoms.get("patient_concerns", "None"))
         
-        # Tab 3: Risk Assessment
-        with tabs[2]:
+        # Tab 4: Risk Assessment
+        with tabs[3]:
             st.header("Step 3: Risk Assessment")
             
             if not st.session_state.extracted_symptoms:
@@ -474,8 +671,8 @@ with main_col:
                     st.subheader("Justification:")
                     st.write(st.session_state.risk_assessment.get("justification", "No justification provided."))
         
-        # Tab 4: Care Instructions
-        with tabs[3]:
+        # Tab 5: Care Instructions
+        with tabs[4]:
             st.header("Step 4: Care Instructions")
             
             if not st.session_state.risk_assessment:
@@ -580,8 +777,8 @@ with main_col:
                 else:
                     st.warning("No patient phone number available. Cannot send care instructions.")
         
-        # Tab 5: Clinic Summary
-        with tabs[4]:
+        # Tab 6: Clinic Summary
+        with tabs[5]:
             st.header("Step 5: Clinic Summary")
             
             if not st.session_state.care_instructions:
@@ -626,8 +823,8 @@ with main_col:
                         # Display a success message when the workflow is complete
                         st.success("Patient follow-up workflow completed successfully!")
 
-        # Tab 6: Patient Responses
-        with tabs[5]:
+        # Tab 7: Patient Responses
+        with tabs[6]:
             st.header("Patient SMS Responses")
             
             # Add auto-refresh option
