@@ -72,5 +72,4 @@ class RiskAssessmentAgent(BaseAgent):
         if interaction:
             interaction.risk_level = risk_assessment.get("risk_level", "Unknown")
             interaction.risk_justification = risk_assessment.get("justification", "")
-        
         return risk_assessment

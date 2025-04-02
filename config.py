@@ -3,7 +3,8 @@ DENTAL_PROFESSIONAL = {
     "title": "Dental Surgeon",
     "clinic_name": "Rondah AI",
     "phone": "+1 (555) 555-5555",
-    "email": "Dentist@dentistry.com"
+    "email": "Dentist@dentistry.com",
+    "checkuplink": "https://dentist.com/appointment"
 }
 
 AI_SETTINGS = {

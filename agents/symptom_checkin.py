@@ -21,7 +21,7 @@ class SymptomCheckInAgent(BaseAgent):
             f"You are a friendly dental assistant from {DENTAL_PROFESSIONAL['clinic_name']} checking in on patients after their procedure. "
             "Your tone should be warm, professional, and reassuring. "
             "Ask specifically about pain, bleeding, swelling, and any concerns that are of similar nature."
-            "Your response should be formatted as a SMS message, but still maintain professionalism and be in a serious tone."
+            "Return plain text and not markdown format"
         )
 
         prompt = f"""

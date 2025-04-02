@@ -18,17 +18,25 @@ class CareInstructionAgent(BaseAgent):
         Returns:
             str: Personalized care instructions.
         """
-        # Create a system message that guides the AI's behavior
         system_message = (
             "You are a dental professional providing post-operative care instructions. "
             "Your advice should be clear, specific, and tailored to the patient's symptoms and risk level. "
-            "Your response should be formatted as a SMS message, but still maintain professionalism and be in a serious tone."
             "For high-risk cases, emphasize the importance of contacting the clinic immediately. "
             "For medium-risk cases, provide specific monitoring instructions. "
             "For low-risk cases, provide reassurance and general care advice."
+            "Return plain text and not markdown format"
         )
         
-        # Create a prompt with patient context, symptoms, and risk assessment
+        is_high_risk = risk_assessment.get('risk_level', '').lower() == 'high'
+        
+        checkup_link_instruction = ""
+        if is_high_risk and 'checkuplink' in DENTAL_PROFESSIONAL:
+            checkup_link_instruction = (
+                f"\n\nIMPORTANT: Since this is a HIGH RISK situation, include the following link for the patient "
+                f"to schedule an immediate appointment: {DENTAL_PROFESSIONAL['checkuplink']}\n"
+                f"Make it clear that they should use this link to book an appointment as soon as possible."
+            )
+        
         prompt = f"""
         Patient: {patient.name}
         Procedure: {patient.procedure}
@@ -49,15 +57,13 @@ class CareInstructionAgent(BaseAgent):
         
         Generate personalized care instructions for this patient based on their symptoms and risk level.
         The instructions should be written directly to the patient in a clear, compassionate tone.
-        Include specific advice for managing their symptoms and clear guidance on when to seek professional help.
+        Include specific advice for managing their symptoms and clear guidance on when to seek professional help.{checkup_link_instruction}
         
         Sign the message with "Warm regards, {DENTAL_PROFESSIONAL['name']}, {DENTAL_PROFESSIONAL['title']}".
         """
         
-        # Call the GPT API to generate care instructions
         care_instructions = self.call_gpt(prompt, system_message)
         
-        # Store the care instructions in the patient's latest interaction
         interaction = patient.get_latest_interaction()
         if interaction:
             interaction.care_instructions = care_instructions

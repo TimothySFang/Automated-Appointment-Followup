@@ -28,6 +28,26 @@
       {
         "timestamp": "2025-04-01T16:48:12.620930",
         "message": "hey yes im good. No troubles here"
+      },
+      {
+        "timestamp": "2025-04-01T16:53:26.812109",
+        "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
+      },
+      {
+        "timestamp": "2025-04-01T16:56:29.791740",
+        "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
+      },
+      {
+        "timestamp": "2025-04-01T16:59:15.064159",
+        "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
+      },
+      {
+        "timestamp": "2025-04-01T16:59:33.777468",
+        "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
+      },
+      {
+        "timestamp": "2025-04-01T17:13:33.519843",
+        "message": "Hey yea I am very very concerned. Its bleeding more than ever and I have major swelling"
       }
     ],
     "processed": true
@@ -37,6 +57,10 @@
       {
         "timestamp": "2025-04-01T12:23:06.970033",
         "message": "I'm feeling good but sometimes it hurts when I chew tough food "
+      },
+      {
+        "timestamp": "2025-04-01T17:36:55.932745",
+        "message": "I have a ton of pain "
       }
     ],
     "processed": true

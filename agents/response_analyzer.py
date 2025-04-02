@@ -16,7 +16,6 @@ class ResponseAnalyzerAgent(BaseAgent):
         Returns:
             dict: Structured data about the patient's symptoms.
         """
-        # Create a system message that guides the AI's behavior
         system_message = (
             "You are a dental professional analyzing patient responses after procedures. "
             "Extract specific symptoms and their severity from the patient's message. "
@@ -24,7 +23,6 @@ class ResponseAnalyzerAgent(BaseAgent):
             "swelling (none/mild/moderate/severe), fever, and any other symptoms mentioned."
         )
         
-        # Create a prompt with patient context and their response
         prompt = f"""
         Patient: {patient.name}
         Procedure: {patient.procedure}
@@ -48,21 +46,17 @@ class ResponseAnalyzerAgent(BaseAgent):
         Provide ONLY the JSON with no additional text.
         """
         
-        # Call the GPT API to analyze the response
         analysis_result = self.call_gpt(prompt, system_message)
         
-        # Try to parse the result as a dictionary (it should be JSON)
         try:
             import json
             extracted_symptoms = json.loads(analysis_result)
         except json.JSONDecodeError:
-            # If parsing fails, return a basic structure with an error
             extracted_symptoms = {
                 "error": "Failed to parse response",
                 "raw_response": analysis_result
             }
         
-        # Store the extracted symptoms in the patient's latest interaction
         interaction = patient.get_latest_interaction()
         if interaction:
             interaction.patient_response = response_text
