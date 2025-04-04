@@ -25,8 +25,9 @@ class CareInstructionAgent(BaseAgent):
             "For medium-risk cases, provide specific monitoring instructions. "
             "For low-risk cases, provide reassurance and general care advice."
             "Return plain text and not markdown format"
+            "MAKE SURE TO RETURN IN PLAIN TEXT WITH NO MARKDOWN"
         )
-        
+         
         is_high_risk = risk_assessment.get('risk_level', '').lower() == 'high'
         
         checkup_link_instruction = ""

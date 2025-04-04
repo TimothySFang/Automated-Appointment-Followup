@@ -85,5 +85,27 @@
       }
     ],
     "processed": true
+  },
+  "+12042992892": {
+    "responses": [
+      {
+        "timestamp": "2025-04-02T17:19:50.013072",
+        "message": "it hurts!!!!!!!!!!!!!!!!!"
+      },
+      {
+        "timestamp": "2025-04-02T17:19:52.127316",
+        "message": "putain!!!!!!"
+      }
+    ],
+    "processed": true
+  },
+  "+14168289530": {
+    "responses": [
+      {
+        "timestamp": "2025-04-03T12:24:49.205267",
+        "message": "Well at first I had a quite a bit of swelling and then my cap fell off."
+      }
+    ],
+    "processed": true
   }
 }

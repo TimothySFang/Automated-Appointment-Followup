@@ -33,7 +33,6 @@ class RiskAssessmentAgent(BaseAgent):
         
         Extracted Symptoms:
         - Pain Level: {extracted_symptoms.get('pain_level', 'Not mentioned')}
-        - Bleeding: {extracted_symptoms.get('bleeding', 'Not mentioned')}
         - Swelling: {extracted_symptoms.get('swelling', 'Not mentioned')}
         - Fever: {extracted_symptoms.get('fever', False)}
         - Medication Taken: {extracted_symptoms.get('medication_taken', 'None')}
